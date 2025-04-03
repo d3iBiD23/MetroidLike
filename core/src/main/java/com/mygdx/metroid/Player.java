@@ -20,8 +20,10 @@ public class Player {
         velocity = new Vector2(0, 0);
         texture = new Texture("PNG/Characters/platformChar_idle.png");
         bounds = new Rectangle(x, y, texture.getWidth(), texture.getHeight());
+        float footWidth = texture.getWidth() * 0.5f; // ancho reducido a la mitad
+
         // Definimos la hitbox de los pies en la parte inferior del sprite
-        footBounds = new Rectangle(x, y, texture.getWidth(), 10); // 10 píxeles de alto
+        footBounds = new Rectangle(x + (texture.getWidth() - footWidth) / 2, y, footWidth, 10);
     }
 
     public void update(float delta) {
@@ -30,8 +32,7 @@ public class Player {
 
         // Actualizamos ambas hitboxes a la posición actual del jugador
         bounds.setPosition(position.x, position.y);
-        footBounds.setPosition(position.x, position.y); // Si es necesario, puedes aplicar un offset horizontal
-
+        footBounds.setPosition(position.x + (texture.getWidth() - footBounds.width) / 2, position.y);
         // Limitar la posición en X para que no se salga de los bordes
         position.x = MathUtils.clamp(position.x, 0, 400 - texture.getWidth());
     }
