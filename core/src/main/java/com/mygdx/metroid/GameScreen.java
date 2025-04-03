@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 
 public class GameScreen extends ScreenAdapter {
@@ -75,9 +76,9 @@ public class GameScreen extends ScreenAdapter {
 
     private void update(float delta) {
         player.update(delta);
-        // Si se toca la pantalla, mueve al jugador según la zona tocada
+
+        // Manejo de controles táctiles (o de escritorio) para mover al personaje...
         if (Gdx.input.isTouched()) {
-            // Gdx.input.getX() devuelve la coordenada X del toque en píxeles (origen superior izquierdo)
             float touchX = Gdx.input.getX();
             float screenWidth = Gdx.graphics.getWidth();
             if (touchX < screenWidth / 2) {
@@ -87,7 +88,7 @@ public class GameScreen extends ScreenAdapter {
             }
         }
 
-        // Control de salto: si el jugador cae y toca una plataforma, salta
+        // Control de salto: si el personaje cae y toca alguna plataforma, salta
         if (player.velocity.y < 0) {
             for (Platform platform : platforms) {
                 if (player.bounds.overlaps(platform.bounds)) {
@@ -96,10 +97,31 @@ public class GameScreen extends ScreenAdapter {
             }
         }
 
-        // Ajuste de la cámara si el jugador sube
-        if (player.position.y > camera.position.y) {
-            camera.position.y = player.position.y;
+        // Seguimiento de cámara con zona muerta y límite inferior
+        float viewportHeight = 800;  // Altura de la cámara
+        float deadZone = 50;         // Margen de zona muerta (puedes ajustar este valor)
+        float cameraBottom = camera.position.y - viewportHeight / 2;
+        float cameraTop = camera.position.y + viewportHeight / 2;
+        float targetY = camera.position.y;
+
+        // Si el personaje se acerca al borde inferior, mueve la cámara hacia abajo
+        if (player.position.y < cameraBottom + deadZone) {
+            targetY = player.position.y - deadZone + viewportHeight / 2;
         }
+        // Si el personaje se acerca al borde superior, mueve la cámara hacia arriba
+        else if (player.position.y > cameraTop - deadZone) {
+            targetY = player.position.y + deadZone - viewportHeight / 2;
+        }
+
+        // Impide que la cámara muestre por debajo del suelo al inicio
+        float minCameraY = viewportHeight / 2;  // Por ejemplo, si la pantalla es de 800, mínimo es 400
+        if (targetY < minCameraY) {
+            targetY = minCameraY;
+        }
+
+        // Interpola suavemente la posición de la cámara
+        camera.position.y = MathUtils.lerp(camera.position.y, targetY, 0.1f);
+
     }
 
     @Override
