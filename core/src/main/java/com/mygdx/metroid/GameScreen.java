@@ -47,7 +47,7 @@ public class GameScreen extends ScreenAdapter {
 
         // Generamos plataformas adicionales para saltar (arriba del suelo)
         int numJumpPlatforms = 20;
-        float gap = 100; // espacio vertical entre plataformas
+        float gap = 150; // espacio vertical entre plataformas
         for (int i = 1; i < numJumpPlatforms; i++) {
             float posX = (float) Math.random() * (400 - 50); // asumiendo que el tile tiene ancho ~50
             float posY = groundTexture.getHeight() + i * gap;
@@ -91,7 +91,7 @@ public class GameScreen extends ScreenAdapter {
         // Control de salto: si el personaje cae y toca alguna plataforma, salta
         if (player.velocity.y < 0) {
             for (Platform platform : platforms) {
-                if (player.bounds.overlaps(platform.bounds)) {
+                if (player.getFootBounds().overlaps(platform.bounds)) {
                     player.jump();
                 }
             }
