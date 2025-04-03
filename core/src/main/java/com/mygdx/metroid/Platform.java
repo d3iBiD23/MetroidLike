@@ -12,7 +12,7 @@ public class Platform {
     // Constructor por defecto (carga su propio texture)
     public Platform(float x, float y) {
         position = new Vector2(x, y);
-        texture = new Texture("PNG/Tiles/platformPack_tile001.png");
+        texture = new Texture("PNG/Tiles/platformPack_tile031.png");
         bounds = new Rectangle(x, y, texture.getWidth(), texture.getHeight());
     }
 

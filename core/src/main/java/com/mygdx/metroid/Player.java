@@ -1,6 +1,7 @@
 package com.mygdx.metroid;
 
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
@@ -16,7 +17,6 @@ public class Player {
     public Player(float x, float y) {
         position = new Vector2(x, y);
         velocity = new Vector2(0, 0);
-        // Asegúrate de tener la imagen en la ruta correcta
         texture = new Texture("PNG/Characters/platformChar_idle.png");
         bounds = new Rectangle(x, y, texture.getWidth(), texture.getHeight());
     }
@@ -24,6 +24,10 @@ public class Player {
     public void update(float delta) {
         velocity.y += GRAVITY;
         position.add(velocity.x * delta, velocity.y * delta);
+
+        // Limitar la posición en X para que no se salga de los bordes
+        position.x = MathUtils.clamp(position.x, 0, 400 - texture.getWidth());
+
         bounds.setPosition(position.x, position.y);
     }
 
@@ -43,7 +47,6 @@ public class Player {
         return texture;
     }
 
-    // Metodo para liberar el recurso
     public void dispose() {
         if (texture != null) {
             texture.dispose();

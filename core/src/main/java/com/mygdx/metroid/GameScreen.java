@@ -46,8 +46,8 @@ public class GameScreen extends ScreenAdapter {
         player = new Player(playerX, playerY);
 
         // Generamos plataformas adicionales para saltar (arriba del suelo)
-        int numJumpPlatforms = 10;
-        float gap = 80; // espacio vertical entre plataformas
+        int numJumpPlatforms = 20;
+        float gap = 100; // espacio vertical entre plataformas
         for (int i = 1; i < numJumpPlatforms; i++) {
             float posX = (float) Math.random() * (400 - 50); // asumiendo que el tile tiene ancho ~50
             float posY = groundTexture.getHeight() + i * gap;
