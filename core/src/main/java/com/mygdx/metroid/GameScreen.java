@@ -27,32 +27,25 @@ public class GameScreen extends ScreenAdapter {
 
         platforms = new Array<Platform>();
         for (int i = 0; i < 10; i++) {
-            platforms.add(new Platform((float) Math.random() * 350, i * 80));
+            platforms.add(new Platform((float)Math.random() * 350, i * 80));
         }
     }
 
     @Override
     public void render(float delta) {
         update(delta);
-
         camera.update();
         batch.setProjectionMatrix(camera.combined);
-
         batch.begin();
         batch.draw(player.getTexture(), player.position.x, player.position.y);
-
         for (Platform platform : platforms) {
             batch.draw(platform.getTexture(), platform.position.x, platform.position.y);
         }
-
         batch.end();
     }
 
     private void update(float delta) {
-        // Actualizamos la física del jugador
         player.update(delta);
-
-        // Colisión simple: si el jugador está cayendo y toca una plataforma, "rebota" (salta)
         if (player.velocity.y < 0) {
             for (Platform platform : platforms) {
                 if (player.bounds.overlaps(platform.bounds)) {
@@ -60,13 +53,9 @@ public class GameScreen extends ScreenAdapter {
                 }
             }
         }
-
-        // Mover la cámara hacia arriba si el jugador supera la posición actual de la cámara
         if (player.position.y > camera.position.y) {
             camera.position.y = player.position.y;
         }
-
-        // Ejemplo de control lateral (para pruebas en escritorio)
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
             player.moveLeft(delta);
         }
@@ -75,8 +64,13 @@ public class GameScreen extends ScreenAdapter {
         }
     }
 
+    // Aquí liberamos los recursos de la pantalla
     @Override
     public void dispose() {
-        // Aquí podrías liberar recursos si es necesario
+        player.dispose();
+        for (Platform platform : platforms) {
+            platform.dispose();
+        }
+        // Si se agregan otros recursos (como sonidos o fonts), se deben liberar aquí también.
     }
 }

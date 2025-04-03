@@ -16,13 +16,12 @@ public class Player {
     public Player(float x, float y) {
         position = new Vector2(x, y);
         velocity = new Vector2(0, 0);
-        // Asegúrate de tener la imagen en la carpeta correspondiente (ej. "assets/Characters/player.png")
+        // Asegúrate de tener la imagen en la ruta correcta
         texture = new Texture("PNG/Characters/platformChar_idle.png");
         bounds = new Rectangle(x, y, texture.getWidth(), texture.getHeight());
     }
 
     public void update(float delta) {
-        // Aplicamos gravedad
         velocity.y += GRAVITY;
         position.add(velocity.x * delta, velocity.y * delta);
         bounds.setPosition(position.x, position.y);
@@ -42,5 +41,13 @@ public class Player {
 
     public Texture getTexture() {
         return texture;
+    }
+
+    // Metodo para liberar el recurso
+    public void dispose() {
+        if (texture != null) {
+            texture.dispose();
+            texture = null;
+        }
     }
 }
