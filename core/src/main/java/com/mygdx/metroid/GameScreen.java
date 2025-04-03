@@ -29,6 +29,8 @@ public class GameScreen extends ScreenAdapter {
     private final float SCREEN_WIDTH = 400;
     private final float SCREEN_HEIGHT = 800;
 
+    private final float WALL_GAP = 200f;
+
     public GameScreen(Main game) {
         this.game = game;
         this.batch = game.batch;
@@ -56,18 +58,18 @@ public class GameScreen extends ScreenAdapter {
         float playerY = groundTexture.getHeight(); // Inicia justo sobre el suelo
         player = new Player(playerX, playerY);
 
-        // Cargamos la textura para las paredes (plataformas que actúan de pared)
+        // Cargamos la textura para las paredes (tiles de pared)
         wallTexture = new Texture("PNG/Tiles/platformPack_tile033.png");
 
         // Generamos plataformas para las paredes (por ejemplo, 20 segmentos para cubrir una gran altura)
         leftWallPlatforms = new Array<Platform>();
         rightWallPlatforms = new Array<Platform>();
-        int numWallSegments = 20; // Puedes ajustar este número para que cubra más o menos altura
+        int numWallSegments = 20; // Puedes ajustar este número
         for (int i = 0; i < numWallSegments; i++) {
-            float yPos = i * wallTexture.getHeight();
-            // Pared izquierda en x = 0
+            float yPos = i * (wallTexture.getHeight() + WALL_GAP);
+            // Para la pared izquierda, la posición X es 0
             leftWallPlatforms.add(new Platform(0, yPos, wallTexture));
-            // Pared derecha en x = SCREEN_WIDTH - wallTexture.getWidth()
+            // Para la pared derecha, posición X es SCREEN_WIDTH - wallTexture.getWidth()
             rightWallPlatforms.add(new Platform(SCREEN_WIDTH - wallTexture.getWidth(), yPos, wallTexture));
         }
     }
@@ -92,14 +94,41 @@ public class GameScreen extends ScreenAdapter {
         batch.begin();
         // Dibujar el suelo (opcional)
         batch.draw(groundTexture, 0, 0, SCREEN_WIDTH, groundTexture.getHeight());
-        // Dibujar las plataformas pared (para la pared izquierda)
+
+        // Dibujar las plataformas de la pared izquierda con rotación 90° (hacia la derecha)
         for (Platform wall : leftWallPlatforms) {
-            batch.draw(wall.getTexture(), wall.position.x, wall.position.y);
+            batch.draw(wall.getTexture(),
+                wall.position.x,
+                wall.position.y,
+                wall.getTexture().getWidth() / 2f,    // origenX
+                wall.getTexture().getHeight() / 2f,   // origenY
+                wall.getTexture().getWidth(),
+                wall.getTexture().getHeight(),
+                1f, 1f,
+                -90,     // rotación: 90° (hacia la derecha)
+                0, 0,
+                wall.getTexture().getWidth(),
+                wall.getTexture().getHeight(),
+                false, false);
         }
-        // Dibujar las plataformas pared (para la pared derecha)
+
+        // Dibujar las plataformas de la pared derecha con rotación -90° (hacia la izquierda)
         for (Platform wall : rightWallPlatforms) {
-            batch.draw(wall.getTexture(), wall.position.x, wall.position.y);
+            batch.draw(wall.getTexture(),
+                wall.position.x,
+                wall.position.y,
+                wall.getTexture().getWidth() / 2f,    // origenX
+                wall.getTexture().getHeight() / 2f,   // origenY
+                wall.getTexture().getWidth(),
+                wall.getTexture().getHeight(),
+                1f, 1f,
+                90,    // rotación: -90° (hacia la izquierda)
+                0, 0,
+                wall.getTexture().getWidth(),
+                wall.getTexture().getHeight(),
+                false, false);
         }
+
         // Dibujar al jugador
         batch.draw(player.getTexture(), player.position.x, player.position.y);
         batch.end();
@@ -115,36 +144,28 @@ public class GameScreen extends ScreenAdapter {
 
         // Comprobar colisión del jugador con las plataformas que hacen de pared
 
-        // Para la pared izquierda: si hay colisión, hacemos que el lado derecho del jugador
-        // quede pegado al lado derecho del tile
+        // Para la pared izquierda: queremos que el jugador se "pegue" en el borde derecho del tile
         for (Platform wall : leftWallPlatforms) {
             if (player.bounds.overlaps(wall.bounds)) {
-                // tileWidth es wall.getTexture().getWidth()
+                // El lado izquierdo del jugador se coloca en:
                 float newX = wall.position.x + wall.getTexture().getWidth();
-                // Mueve el jugador para que su lado IZQUIERDO coincida con tileWidth
                 player.position.x = newX;
-                // Actualiza la hitbox
                 player.bounds.setPosition(player.position.x, player.position.y);
-                // Cambia el estado
                 player.currentState = Player.PlayerState.ON_WALL_LEFT;
                 break;
             }
         }
 
-        // Para la pared derecha: si hay colisión, el lado izquierdo del jugador se coloca en el borde izquierdo del tile
+        // Para la pared derecha: queremos que el lado derecho del jugador se alinee al borde izquierdo del tile
         for (Platform wall : rightWallPlatforms) {
             if (player.bounds.overlaps(wall.bounds)) {
                 float newX = wall.position.x - player.getTexture().getWidth();
-                // Mueve el jugador para que su lado DERECHO coincida con tile.x
                 player.position.x = newX;
-                // Actualiza la hitbox
                 player.bounds.setPosition(player.position.x, player.position.y);
-                // Cambia el estado
                 player.currentState = Player.PlayerState.ON_WALL_RIGHT;
                 break;
             }
         }
-
 
         // Actualizar la cámara para que siga al jugador verticalmente
         float minCameraY = SCREEN_HEIGHT / 2;
