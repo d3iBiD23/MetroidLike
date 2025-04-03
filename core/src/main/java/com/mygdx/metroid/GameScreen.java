@@ -30,7 +30,7 @@ public class GameScreen extends ScreenAdapter {
 
         // Configuramos la cámara dinámica para el juego
         camera = new OrthographicCamera();
-        camera.setToOrtho(false, 400, 800);
+        camera.setToOrtho(false, 400gga, 800);
         camera.position.set(200, 400, 0);
         camera.update();
 
@@ -42,7 +42,7 @@ public class GameScreen extends ScreenAdapter {
         platforms = new Array<Platform>();
 
         // Cargamos el texture del suelo una única vez
-        groundTexture = new Texture("PNG/Tiles/platformPack_tile016.png");
+        groundTexture = new Texture("PNG/Tiles/platformPack_tile015.png");
         int numTiles = (int) Math.ceil(400 / (float) groundTexture.getWidth()) + 1;
         for (int i = 0; i < numTiles; i++) {
             platforms.add(new GroundPlatform(i * groundTexture.getWidth(), 0, groundTexture));
@@ -55,7 +55,7 @@ public class GameScreen extends ScreenAdapter {
         player = new Player(playerX, playerY);
 
         // Generamos plataformas adicionales para saltar
-        int numJumpPlatforms = 20;
+        int numJumpPlatforms = 200;
         float gap = 150;
         for (int i = 1; i < numJumpPlatforms; i++) {
             float posX = (float) Math.random() * (400 - 50);
