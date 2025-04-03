@@ -75,7 +75,19 @@ public class GameScreen extends ScreenAdapter {
 
     private void update(float delta) {
         player.update(delta);
-        // Si el jugador cae y toca alguna plataforma, salta
+        // Si se toca la pantalla, mueve al jugador según la zona tocada
+        if (Gdx.input.isTouched()) {
+            // Gdx.input.getX() devuelve la coordenada X del toque en píxeles (origen superior izquierdo)
+            float touchX = Gdx.input.getX();
+            float screenWidth = Gdx.graphics.getWidth();
+            if (touchX < screenWidth / 2) {
+                player.moveLeft(delta);
+            } else {
+                player.moveRight(delta);
+            }
+        }
+
+        // Control de salto: si el jugador cae y toca una plataforma, salta
         if (player.velocity.y < 0) {
             for (Platform platform : platforms) {
                 if (player.bounds.overlaps(platform.bounds)) {
@@ -83,16 +95,10 @@ public class GameScreen extends ScreenAdapter {
                 }
             }
         }
-        // Mueve la cámara si el jugador sube
+
+        // Ajuste de la cámara si el jugador sube
         if (player.position.y > camera.position.y) {
             camera.position.y = player.position.y;
-        }
-        // Controles laterales para pruebas en escritorio
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            player.moveLeft(delta);
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            player.moveRight(delta);
         }
     }
 
