@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 
+
 public class GameScreen extends ScreenAdapter {
     private Main game;
     private SpriteBatch batch;
@@ -21,6 +22,9 @@ public class GameScreen extends ScreenAdapter {
     private Texture backgroundTexture; // Textura de fondo
     private boolean initialFrame = true;
 
+    private final float SCREEN_WIDTH = 400;
+    private final float SCREEN_HEIGHT = 800;
+
     public GameScreen(Main game) {
         this.game = game;
         this.batch = game.batch;
@@ -30,42 +34,29 @@ public class GameScreen extends ScreenAdapter {
 
         // Configuramos la cámara dinámica para el juego
         camera = new OrthographicCamera();
-        camera.setToOrtho(false, 400, 800);
-        camera.position.set(200, 400, 0);
+        camera.setToOrtho(false, SCREEN_WIDTH, SCREEN_HEIGHT);
+        camera.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 0);
         camera.update();
 
-        // Creamos una cámara fija para el fondo
+        // Configuramos la cámara fija para el fondo
         fixedCamera = new OrthographicCamera();
-        fixedCamera.setToOrtho(false, 400, 800);
+        fixedCamera.setToOrtho(false, SCREEN_WIDTH, SCREEN_HEIGHT);
         fixedCamera.update();
 
-        platforms = new Array<Platform>();
-
-        // Cargamos el texture del suelo una única vez
+        // Cargamos una textura para el suelo (opcional)
         groundTexture = new Texture("PNG/Tiles/platformPack_tile015.png");
-        int numTiles = (int) Math.ceil(400 / (float) groundTexture.getWidth()) + 1;
-        for (int i = 0; i < numTiles; i++) {
-            platforms.add(new GroundPlatform(i * groundTexture.getWidth(), 0, groundTexture));
-        }
 
         // Posiciona al jugador sobre el suelo, centrado horizontalmente
-        float playerWidth = new Texture("PNG/Characters/platformChar_idle.png").getWidth();
-        float playerX = 200 - (playerWidth / 2);
-        float playerY = groundTexture.getHeight();
+        // Se utiliza la anchura de la textura idle del jugador para centrarlo
+        float playerWidth = new Texture("PNG/Characters/platformChar_happy.png").getWidth();
+        float playerX = (SCREEN_WIDTH - playerWidth) / 2;
+        float playerY = groundTexture.getHeight(); // Comienza justo sobre el suelo
         player = new Player(playerX, playerY);
-
-        // Generamos plataformas adicionales para saltar
-        int numJumpPlatforms = 200;
-        float gap = 150;
-        for (int i = 1; i < numJumpPlatforms; i++) {
-            float posX = (float) Math.random() * (400 - 50);
-            float posY = groundTexture.getHeight() + i * gap;
-            platforms.add(new Platform(posX, posY));
-        }
     }
 
     @Override
     public void render(float delta) {
+        // Limpiar la pantalla
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
@@ -75,69 +66,49 @@ public class GameScreen extends ScreenAdapter {
         // Dibujar el fondo usando la cámara fija
         batch.setProjectionMatrix(fixedCamera.combined);
         batch.begin();
-        batch.setColor(0.7f, 0.7f, 0.7f, 1f);
-        batch.draw(backgroundTexture, 0, 0, 400, 800);
-        batch.setColor(1f, 1f, 1f, 1f);
+        batch.draw(backgroundTexture, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
         batch.end();
 
-        // Dibujar el resto del juego usando la cámara dinámica
+        // Dibujar los elementos del juego usando la cámara dinámica
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        for (Platform platform : platforms) {
-            batch.draw(platform.getTexture(), platform.position.x, platform.position.y);
-        }
+        // Dibujar el suelo (opcional)
+        batch.draw(groundTexture, 0, 0, SCREEN_WIDTH, groundTexture.getHeight());
+        // Dibujar el jugador
         batch.draw(player.getTexture(), player.position.x, player.position.y);
         batch.end();
     }
 
     private void update(float delta) {
+        // Detectar toque en pantalla para ejecutar la acción de salto
+        if (Gdx.input.justTouched()) {
+            player.onTap();
+        }
+
+        // Actualizar el jugador
         player.update(delta);
 
-        if (initialFrame) {
-            initialFrame = false;
-        } else {
-            if (player.velocity.y < 0) {
-                for (Platform platform : platforms) {
-                    if (player.getFootBounds().overlaps(platform.bounds)) {
-                        player.jump();
-                    }
-                }
-            }
+        // Comprobar colisión con las paredes y ajustar el estado
+        if (player.position.x <= 0) {
+            // Colisión con la pared izquierda
+            player.position.x = 0;
+            player.currentState = Player.PlayerState.ON_WALL_LEFT;
+        } else if (player.position.x + player.getTexture().getWidth() >= SCREEN_WIDTH) {
+            // Colisión con la pared derecha
+            player.position.x = SCREEN_WIDTH - player.getTexture().getWidth();
+            player.currentState = Player.PlayerState.ON_WALL_RIGHT;
         }
 
-        if (Gdx.input.isTouched()) {
-            float touchX = Gdx.input.getX();
-            float screenWidth = Gdx.graphics.getWidth();
-            if (touchX < screenWidth / 2) {
-                player.moveLeft(delta);
-            } else {
-                player.moveRight(delta);
-            }
-        }
-
-        float viewportHeight = 800;
-        float minCameraY = viewportHeight / 2;
-        float relativeY = player.position.y - camera.position.y;
-        float targetY = camera.position.y;
-        float deadZoneUp = 20;
-        float deadZoneDown = -100;
-
-        if (relativeY > deadZoneUp) {
-            targetY = player.position.y - deadZoneUp;
-        } else if (relativeY < deadZoneDown) {
-            targetY = player.position.y - deadZoneDown;
-        }
-
-        targetY = Math.max(targetY, minCameraY);
+        // Actualizar la cámara para que siga al jugador verticalmente
+        float minCameraY = SCREEN_HEIGHT / 2;
+        // La cámara se mueve hacia arriba conforme el jugador sube
+        float targetY = Math.max(player.position.y, minCameraY);
         camera.position.y = MathUtils.lerp(camera.position.y, targetY, 0.1f);
     }
 
     @Override
     public void dispose() {
         player.dispose();
-        for (Platform platform : platforms) {
-            platform.dispose();
-        }
         if (groundTexture != null) {
             groundTexture.dispose();
             groundTexture = null;

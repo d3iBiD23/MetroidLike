@@ -6,72 +6,118 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 public class Player {
+    public enum PlayerState {
+        ON_GROUND,
+        ON_WALL_LEFT,
+        ON_WALL_RIGHT,
+        IN_AIR // (si hiciera falta para animaciones o transición)
+    }
+
     public Vector2 position;
     public Vector2 velocity;
     private Texture texture;
     public Rectangle bounds;
-    private Rectangle footBounds; // Nueva hitbox para los pies (por ejemplo, 10 píxeles de alto, ajústalo según tu sprite)
-    private static final float GRAVITY = -20f;
-    private static final float JUMP_VELOCITY = 1000;
-    private static final float MOVE_SPEED = 200;
+
     private Texture idleTexture;
     private Texture climbTexture;
     private float climbTimer = 0;
     private static final float CLIMB_DURATION = 0.2f;
 
+    // Valores para la física y el salto
+    private static final float GRAVITY = -20f;
+    private static final float WALL_JUMP_HORIZONTAL_IMPULSE = 200;
+    private static final float WALL_JUMP_VERTICAL_IMPULSE = 1000;
+    public PlayerState currentState;
+
     public Player(float x, float y) {
         position = new Vector2(x, y);
         velocity = new Vector2(0, 0);
-        // Cargamos ambas texturas
+        // Cargamos las texturas: idle para estado normal y climb para el salto
         idleTexture = new Texture("PNG/Characters/platformChar_happy.png");
         climbTexture = new Texture("PNG/Characters/platformChar_idle.png");
-        texture = idleTexture; // Textura inicial es la idle
+        texture = idleTexture;
+        // Inicializamos la hitbox en base a la textura idle
         bounds = new Rectangle(x, y, idleTexture.getWidth(), idleTexture.getHeight());
-        float footWidth = idleTexture.getWidth() * 0.5f; // ancho reducido para los pies
-        footBounds = new Rectangle(x + (idleTexture.getWidth() - footWidth) / 2, y, footWidth, 10);
+        // El jugador comienza en el suelo
+        currentState = PlayerState.ON_GROUND;
     }
 
+
     public void update(float delta) {
-        velocity.y += GRAVITY;
+        // Aplicamos la física según el estado actual
+        switch (currentState) {
+            case IN_AIR:
+                // Durante el salto, se aplica la gravedad
+                velocity.y += GRAVITY;
+                break;
+            case ON_WALL_LEFT:
+            case ON_WALL_RIGHT:
+                // Cuando el jugador está "pegado" a la pared, anulamos la caída
+                velocity.y = 0;
+                break;
+            case ON_GROUND:
+                // En el suelo no se aplica gravedad (puedes ajustar según necesites)
+                break;
+        }
+
+        // Actualizamos la posición con base en la velocidad
         position.add(velocity.x * delta, velocity.y * delta);
-
-        // Actualizamos las hitboxes a la posición actual
+        // Actualizamos la hitbox
         bounds.setPosition(position.x, position.y);
-        footBounds.setPosition(position.x + (idleTexture.getWidth() - footBounds.width) / 2, position.y);
 
-        // Limitar la posición en X para que el sprite no se salga de la pantalla
-        position.x = MathUtils.clamp(position.x, 0, 400 - idleTexture.getWidth());
-
-        // Si estamos en estado "climb", disminuimos el temporizador
+        // Controlamos el temporizador de la animación de "rebote" (climb)
         if (climbTimer > 0) {
             climbTimer -= delta;
             if (climbTimer <= 0) {
-                texture = idleTexture; // Vuelve al estado idle cuando se agota el tiempo
+                texture = idleTexture;
             }
         }
     }
 
-    // Al llamar jump() se activa el estado "climb" durante un corto período
-    public void jump() {
-        velocity.y = JUMP_VELOCITY;
+    /**
+     * Método a llamar cuando se detecta un toque en pantalla.
+     * Según el estado actual, decide a qué pared saltar.
+     */
+    public void onTap() {
+        switch (currentState) {
+            case ON_GROUND:
+                // Al iniciar desde el suelo, asumimos que salta hacia la pared izquierda
+                jumpToWallLeft();
+                break;
+            case ON_WALL_LEFT:
+                // Si está pegado a la pared izquierda, salta hacia la derecha
+                jumpToWallRight();
+                break;
+            case ON_WALL_RIGHT:
+                // Si está pegado a la pared derecha, salta hacia la izquierda
+                jumpToWallLeft();
+                break;
+            default:
+                // Si ya está en el aire, se ignora el toque (o se puede implementar doble salto)
+                break;
+        }
+    }
+
+    // Realiza el salto hacia la pared izquierda
+    private void jumpToWallLeft() {
+        velocity.x = -WALL_JUMP_HORIZONTAL_IMPULSE;
+        velocity.y = WALL_JUMP_VERTICAL_IMPULSE;
+        currentState = PlayerState.IN_AIR;
         texture = climbTexture;
         climbTimer = CLIMB_DURATION;
     }
 
-    public void moveLeft(float delta) {
-        position.x -= MOVE_SPEED * delta;
-    }
-
-    public void moveRight(float delta) {
-        position.x += MOVE_SPEED * delta;
+    // Realiza el salto hacia la pared derecha
+    private void jumpToWallRight() {
+        velocity.x = WALL_JUMP_HORIZONTAL_IMPULSE;
+        velocity.y = WALL_JUMP_VERTICAL_IMPULSE;
+        currentState = PlayerState.IN_AIR;
+        texture = climbTexture;
+        climbTimer = CLIMB_DURATION;
     }
 
     public Texture getTexture() {
         return texture;
-    }
-
-    public Rectangle getFootBounds() {
-        return footBounds;
     }
 
     public void dispose() {
