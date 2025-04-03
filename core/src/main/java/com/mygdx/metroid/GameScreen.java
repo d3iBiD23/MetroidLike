@@ -20,7 +20,11 @@ public class GameScreen extends ScreenAdapter {
     private Array<Platform> platforms;
     private Texture groundTexture;
     private Texture backgroundTexture; // Textura de fondo
-    private boolean initialFrame = true;
+    private Texture wallTexture; // Usada para las plataformas que hacen de pared
+
+    // Conjuntos de plataformas para las paredes
+    private Array<Platform> leftWallPlatforms;
+    private Array<Platform> rightWallPlatforms;
 
     private final float SCREEN_WIDTH = 400;
     private final float SCREEN_HEIGHT = 800;
@@ -43,15 +47,29 @@ public class GameScreen extends ScreenAdapter {
         fixedCamera.setToOrtho(false, SCREEN_WIDTH, SCREEN_HEIGHT);
         fixedCamera.update();
 
-        // Cargamos una textura para el suelo (opcional)
+        // Cargamos la textura para el suelo (opcional)
         groundTexture = new Texture("PNG/Tiles/platformPack_tile015.png");
 
-        // Posiciona al jugador sobre el suelo, centrado horizontalmente
-        // Se utiliza la anchura de la textura idle del jugador para centrarlo
+        // Creamos al jugador, centrado horizontalmente sobre el suelo
         float playerWidth = new Texture("PNG/Characters/platformChar_happy.png").getWidth();
         float playerX = (SCREEN_WIDTH - playerWidth) / 2;
-        float playerY = groundTexture.getHeight(); // Comienza justo sobre el suelo
+        float playerY = groundTexture.getHeight(); // Inicia justo sobre el suelo
         player = new Player(playerX, playerY);
+
+        // Cargamos la textura para las paredes (plataformas que actúan de pared)
+        wallTexture = new Texture("PNG/Tiles/platformPack_tile040.png");
+
+        // Generamos plataformas para las paredes (por ejemplo, 20 segmentos para cubrir una gran altura)
+        leftWallPlatforms = new Array<Platform>();
+        rightWallPlatforms = new Array<Platform>();
+        int numWallSegments = 20; // Puedes ajustar este número para que cubra más o menos altura
+        for (int i = 0; i < numWallSegments; i++) {
+            float yPos = i * wallTexture.getHeight();
+            // Pared izquierda en x = 0
+            leftWallPlatforms.add(new Platform(0, yPos, wallTexture));
+            // Pared derecha en x = SCREEN_WIDTH - wallTexture.getWidth()
+            rightWallPlatforms.add(new Platform(SCREEN_WIDTH - wallTexture.getWidth(), yPos, wallTexture));
+        }
     }
 
     @Override
@@ -74,7 +92,15 @@ public class GameScreen extends ScreenAdapter {
         batch.begin();
         // Dibujar el suelo (opcional)
         batch.draw(groundTexture, 0, 0, SCREEN_WIDTH, groundTexture.getHeight());
-        // Dibujar el jugador
+        // Dibujar las plataformas pared (para la pared izquierda)
+        for (Platform wall : leftWallPlatforms) {
+            batch.draw(wall.getTexture(), wall.position.x, wall.position.y);
+        }
+        // Dibujar las plataformas pared (para la pared derecha)
+        for (Platform wall : rightWallPlatforms) {
+            batch.draw(wall.getTexture(), wall.position.x, wall.position.y);
+        }
+        // Dibujar al jugador
         batch.draw(player.getTexture(), player.position.x, player.position.y);
         batch.end();
     }
@@ -85,21 +111,29 @@ public class GameScreen extends ScreenAdapter {
             player.onTap();
         }
 
-        // Actualizar el jugador
+        // Actualizar al jugador
         player.update(delta);
 
-        // Comprobar colisión con las paredes y ajustar el estado
-        if (player.position.x <= 0) {
-            // Colisión con la pared izquierda
-            player.position.x = 0;
-            player.currentState = Player.PlayerState.ON_WALL_LEFT;
-        } else if (player.position.x + player.getTexture().getWidth() >= SCREEN_WIDTH) {
-            // Colisión con la pared derecha
-            player.position.x = SCREEN_WIDTH - player.getTexture().getWidth();
-            player.currentState = Player.PlayerState.ON_WALL_RIGHT;
+        // Comprobar colisión del jugador con las plataformas que hacen de pared
+
+        // Colisión con la pared izquierda
+        for (Platform wall : leftWallPlatforms) {
+            if (player.bounds.overlaps(wall.bounds)) {
+                player.position.x = wall.position.x; // Ajusta la posición para "pegarlo"
+                player.currentState = Player.PlayerState.ON_WALL_LEFT;
+                break;
+            }
+        }
+        // Colisión con la pared derecha
+        for (Platform wall : rightWallPlatforms) {
+            if (player.bounds.overlaps(wall.bounds)) {
+                player.position.x = wall.position.x; // Ajusta la posición para "pegarlo"
+                player.currentState = Player.PlayerState.ON_WALL_RIGHT;
+                break;
+            }
         }
 
-        // Actualizar la cámara para que siga al jugador verticalmente
+        // Actualizar la cámara para seguir al jugador verticalmente
         float minCameraY = SCREEN_HEIGHT / 2;
         // La cámara se mueve hacia arriba conforme el jugador sube
         float targetY = Math.max(player.position.y, minCameraY);
@@ -117,5 +151,10 @@ public class GameScreen extends ScreenAdapter {
             backgroundTexture.dispose();
             backgroundTexture = null;
         }
+        if (wallTexture != null) {
+            wallTexture.dispose();
+            wallTexture = null;
+        }
+        // También se podrían disponer las plataformas si fuera necesario
     }
 }
