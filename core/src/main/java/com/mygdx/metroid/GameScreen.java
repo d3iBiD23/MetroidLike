@@ -30,7 +30,7 @@ public class GameScreen extends ScreenAdapter {
 
         // Configuramos la cámara dinámica para el juego
         camera = new OrthographicCamera();
-        camera.setToOrtho(false, 400gga, 800);
+        camera.setToOrtho(false, 400, 800);
         camera.position.set(200, 400, 0);
         camera.update();
 
