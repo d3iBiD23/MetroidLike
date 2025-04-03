@@ -25,7 +25,7 @@ public class Player {
 
     // Valores para la física y el salto
     private static final float GRAVITY = -20f;
-    private static final float WALL_JUMP_HORIZONTAL_IMPULSE = 200;
+    private static final float WALL_JUMP_HORIZONTAL_IMPULSE = 300;
     private static final float WALL_JUMP_VERTICAL_IMPULSE = 1000;
     public PlayerState currentState;
 
