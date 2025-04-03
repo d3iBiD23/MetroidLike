@@ -26,7 +26,7 @@ public class GameScreen extends ScreenAdapter {
         this.batch = game.batch;
 
         // Cargamos la imagen de fondo
-        backgroundTexture = new Texture("Background/1.png");
+        backgroundTexture = new Texture("Background/3.png");
 
         // Configuramos la cámara dinámica para el juego
         camera = new OrthographicCamera();
@@ -42,7 +42,7 @@ public class GameScreen extends ScreenAdapter {
         platforms = new Array<Platform>();
 
         // Cargamos el texture del suelo una única vez
-        groundTexture = new Texture("PNG/Tiles/platformPack_tile001.png");
+        groundTexture = new Texture("PNG/Tiles/platformPack_tile016.png");
         int numTiles = (int) Math.ceil(400 / (float) groundTexture.getWidth()) + 1;
         for (int i = 0; i < numTiles; i++) {
             platforms.add(new GroundPlatform(i * groundTexture.getWidth(), 0, groundTexture));
@@ -75,7 +75,9 @@ public class GameScreen extends ScreenAdapter {
         // Dibujar el fondo usando la cámara fija
         batch.setProjectionMatrix(fixedCamera.combined);
         batch.begin();
+        batch.setColor(0.7f, 0.7f, 0.7f, 1f);
         batch.draw(backgroundTexture, 0, 0, 400, 800);
+        batch.setColor(1f, 1f, 1f, 1f);
         batch.end();
 
         // Dibujar el resto del juego usando la cámara dinámica
