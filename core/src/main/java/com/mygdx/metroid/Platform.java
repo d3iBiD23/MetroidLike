@@ -1,37 +1,44 @@
 package com.mygdx.metroid;
 
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 public class Platform {
     public Vector2 position;
-    private Texture texture;
     public Rectangle bounds;
+    private Texture texture;
+    public Sprite sprite;
 
-    // Constructor por defecto (carga su propio texture)
-    public Platform(float x, float y) {
-        position = new Vector2(x, y);
-        texture = new Texture("PNG/Tiles/platformPack_tile033.png");
-        bounds = new Rectangle(x, y, texture.getWidth(), texture.getHeight());
+    public Platform(float x, float y, Texture texture, boolean rotateLeft) {
+        this.position = new Vector2(x, y);
+        this.texture = texture;
+        this.bounds = new Rectangle(x, y, texture.getWidth(), texture.getHeight());
+
+        // Crear sprite con textura
+        sprite = new Sprite(texture);
+        sprite.setPosition(x, y);
+
+        // Aplicar variación visual solo una vez
+        float scale = MathUtils.random(0.95f, 1.05f);
+        float rotationOffset = MathUtils.random(-5f, 5f);
+        sprite.setScale(scale);
+
+        if (rotateLeft) {
+            sprite.setRotation(-90 + rotationOffset);
+        } else {
+            sprite.setRotation(90 + rotationOffset);
+        }
     }
 
-    // Nuevo constructor que recibe un texture compartido
-    public Platform(float x, float y, Texture texture) {
-        position = new Vector2(x, y);
-        this.texture = texture;
-        bounds = new Rectangle(x, y, texture.getWidth(), texture.getHeight());
+    public void draw(SpriteBatch batch) {
+        sprite.draw(batch);
     }
 
     public Texture getTexture() {
         return texture;
-    }
-
-    // Al llamar dispose() se libera el texture (en el caso de objetos propios)
-    public void dispose() {
-        if(texture != null) {
-            texture.dispose();
-            texture = null;
-        }
     }
 }

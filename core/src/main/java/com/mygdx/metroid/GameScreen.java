@@ -62,15 +62,31 @@ public class GameScreen extends ScreenAdapter {
         wallTexture = new Texture("PNG/Tiles/platformPack_tile033.png");
 
         // Generamos plataformas para las paredes (por ejemplo, 20 segmentos para cubrir una gran altura)
-        leftWallPlatforms = new Array<Platform>();
-        rightWallPlatforms = new Array<Platform>();
-        int numWallSegments = 20; // Puedes ajustar este número
+        leftWallPlatforms = new Array<>();
+        rightWallPlatforms = new Array<>();
+
+        float currentY = 0f;
+        int numWallSegments = 50;
+
         for (int i = 0; i < numWallSegments; i++) {
-            float yPos = i * (wallTexture.getHeight() + WALL_GAP);
-            // Para la pared izquierda, la posición X es 0
-            leftWallPlatforms.add(new Platform(0, yPos, wallTexture));
-            // Para la pared derecha, posición X es SCREEN_WIDTH - wallTexture.getWidth()
-            rightWallPlatforms.add(new Platform(SCREEN_WIDTH - wallTexture.getWidth(), yPos, wallTexture));
+            // Separación vertical aleatoria
+            float verticalGap = MathUtils.random(120f, 250f);
+            currentY += verticalGap;
+
+            // Probabilidad de generar plataformas en uno u otro lado
+            boolean spawnLeft = MathUtils.randomBoolean(0.9f);  // 90% de probabilidad de que haya en la izquierda
+            boolean spawnRight = MathUtils.randomBoolean(0.9f); // 90% de probabilidad de que haya en la derecha
+
+            // Offset vertical adicional aleatorio entre lados
+            float offsetY = MathUtils.random(-60f, 80f);
+
+            if (spawnLeft) {
+                leftWallPlatforms.add(new Platform(0, currentY, wallTexture, true));
+            }
+
+            if (spawnRight) {
+                rightWallPlatforms.add(new Platform(SCREEN_WIDTH - wallTexture.getWidth(), currentY + offsetY, wallTexture, false));
+            }
         }
     }
 
@@ -95,38 +111,13 @@ public class GameScreen extends ScreenAdapter {
         // Dibujar el suelo (opcional)
         batch.draw(groundTexture, 0, 0, SCREEN_WIDTH, groundTexture.getHeight());
 
-        // Dibujar las plataformas de la pared izquierda con rotación 90° (hacia la derecha)
+        // Dibujar las plataformas de la pared izquierda con rotación 90° + variación única
         for (Platform wall : leftWallPlatforms) {
-            batch.draw(wall.getTexture(),
-                wall.position.x,
-                wall.position.y,
-                wall.getTexture().getWidth() / 2f,    // origenX
-                wall.getTexture().getHeight() / 2f,   // origenY
-                wall.getTexture().getWidth(),
-                wall.getTexture().getHeight(),
-                1f, 1f,
-                -90,     // rotación: 90° (hacia la derecha)
-                0, 0,
-                wall.getTexture().getWidth(),
-                wall.getTexture().getHeight(),
-                false, false);
+            wall.draw(batch);
         }
 
-        // Dibujar las plataformas de la pared derecha con rotación -90° (hacia la izquierda)
         for (Platform wall : rightWallPlatforms) {
-            batch.draw(wall.getTexture(),
-                wall.position.x,
-                wall.position.y,
-                wall.getTexture().getWidth() / 2f,    // origenX
-                wall.getTexture().getHeight() / 2f,   // origenY
-                wall.getTexture().getWidth(),
-                wall.getTexture().getHeight(),
-                1f, 1f,
-                90,    // rotación: -90° (hacia la izquierda)
-                0, 0,
-                wall.getTexture().getWidth(),
-                wall.getTexture().getHeight(),
-                false, false);
+            wall.draw(batch);
         }
 
         // Dibujar al jugador
@@ -136,8 +127,14 @@ public class GameScreen extends ScreenAdapter {
 
     private void update(float delta) {
         // Detectar toque en pantalla para ejecutar la acción de salto
-        if (Gdx.input.justTouched()) {
-            player.onTap();
+        if (Gdx.input.isTouched()) {
+            if (!player.isChargingJump) {
+                player.startJumpCharge();
+            }
+        } else {
+            if (player.isChargingJump) {
+                player.releaseJumpCharge();
+            }
         }
         // Actualizar al jugador
         player.update(delta);
@@ -152,6 +149,7 @@ public class GameScreen extends ScreenAdapter {
                 player.position.x = newX;
                 player.bounds.setPosition(player.position.x, player.position.y);
                 player.currentState = Player.PlayerState.ON_WALL_LEFT;
+                player.hasAirBounced = false;
                 break;
             }
         }
@@ -163,6 +161,7 @@ public class GameScreen extends ScreenAdapter {
                 player.position.x = newX;
                 player.bounds.setPosition(player.position.x, player.position.y);
                 player.currentState = Player.PlayerState.ON_WALL_RIGHT;
+                player.hasAirBounced = false;
                 break;
             }
         }

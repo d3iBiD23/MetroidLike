@@ -13,6 +13,7 @@ public class Player {
         IN_AIR // (si hiciera falta para animaciones o transición)
     }
 
+    public boolean hasAirBounced = false;
     public Vector2 position;
     public Vector2 velocity;
     private Texture texture;
@@ -22,6 +23,11 @@ public class Player {
     private Texture climbTexture;
     private float climbTimer = 0;
     private static final float CLIMB_DURATION = 0.2f;
+
+    public boolean isChargingJump = false;
+    private float jumpChargeTime = 0f;
+    private final float MAX_JUMP_HOLD = 0.5f; // medio segundo para salto completo
+
 
     // Valores para la física y el salto
     private static final float GRAVITY = -20f;
@@ -41,7 +47,6 @@ public class Player {
         // El jugador comienza en el suelo
         currentState = PlayerState.ON_GROUND;
     }
-
 
     public void update(float delta) {
         // Aplicamos la física según el estado actual
@@ -72,52 +77,105 @@ public class Player {
                 texture = idleTexture;
             }
         }
+
+        if (isChargingJump) {
+            jumpChargeTime += delta;
+        }
     }
 
     /**
-     * Método a llamar cuando se detecta un toque en pantalla.
+     * Metodo a llamar cuando se detecta un toque en pantalla.
      * Según el estado actual, decide a qué pared saltar.
      */
     public void onTap() {
+        float factor = MathUtils.clamp(jumpChargeTime / MAX_JUMP_HOLD, 0.3f, 1f);
         switch (currentState) {
             case ON_GROUND:
-                // Al iniciar desde el suelo, asumimos que salta hacia la pared izquierda
-                jumpToWallLeft();
+                // Primer salto: lanzamos hacia la izquierda
+                jumpToWallLeft(factor);
                 break;
             case ON_WALL_LEFT:
-                // Si está pegado a la pared izquierda, salta hacia la derecha
-                jumpToWallRight();
+                // Saltar hacia la derecha
+                jumpToWallRight(factor);
                 break;
             case ON_WALL_RIGHT:
-                // Si está pegado a la pared derecha, salta hacia la izquierda
-                jumpToWallLeft();
+                // Saltar hacia la izquierda
+                jumpToWallLeft(factor);
                 break;
-            default:
-                // Si ya está en el aire, se ignora el toque (o se puede implementar doble salto)
+            case IN_AIR:
+                // Rebote en el aire → cambia de dirección y aplica impulso
+                performAirBounce();
                 break;
         }
     }
 
-    // Realiza el salto hacia la pared izquierda
-    private void jumpToWallLeft() {
-        velocity.x = -WALL_JUMP_HORIZONTAL_IMPULSE;
+    private void performAirBounce() {
+        if (hasAirBounced) return; // ya se hizo un rebote → no hacer nada
+
+        // Cambia dirección horizontal
+        if (velocity.x < 0) {
+            velocity.x = WALL_JUMP_HORIZONTAL_IMPULSE;
+        } else {
+            velocity.x = -WALL_JUMP_HORIZONTAL_IMPULSE;
+        }
+
+        // Impulso vertical
         velocity.y = WALL_JUMP_VERTICAL_IMPULSE;
-        currentState = PlayerState.IN_AIR;
+
+        // Animación y textura
         texture = climbTexture;
         climbTimer = CLIMB_DURATION;
+
+        // Marcar que ya se usó el rebote en este salto
+        hasAirBounced = true;
+
+        currentState = PlayerState.IN_AIR;
     }
 
-    // Realiza el salto hacia la pared derecha
-    private void jumpToWallRight() {
-        velocity.x = WALL_JUMP_HORIZONTAL_IMPULSE;
-        velocity.y = WALL_JUMP_VERTICAL_IMPULSE;
+    private void jumpToWallLeft(float powerFactor) {
+        velocity.x = -WALL_JUMP_HORIZONTAL_IMPULSE * powerFactor;
+        velocity.y = WALL_JUMP_VERTICAL_IMPULSE * powerFactor;
         currentState = PlayerState.IN_AIR;
         texture = climbTexture;
         climbTimer = CLIMB_DURATION;
+        hasAirBounced = false;
+    }
+
+    private void jumpToWallRight(float powerFactor) {
+        velocity.x = WALL_JUMP_HORIZONTAL_IMPULSE * powerFactor;
+        velocity.y = WALL_JUMP_VERTICAL_IMPULSE * powerFactor;
+        currentState = PlayerState.IN_AIR;
+        texture = climbTexture;
+        climbTimer = CLIMB_DURATION;
+        hasAirBounced = false;
     }
 
     public Texture getTexture() {
         return texture;
+    }
+
+    public void startJumpCharge() {
+        if (currentState == PlayerState.ON_WALL_LEFT || currentState == PlayerState.ON_WALL_RIGHT || currentState == PlayerState.ON_GROUND) {
+            isChargingJump = true;
+            jumpChargeTime = 0f;
+        }
+    }
+
+    public void releaseJumpCharge() {
+        if (!isChargingJump) return;
+
+        isChargingJump = false;
+
+        // Determinar fuerza del salto en base al tiempo de carga
+        float factor = MathUtils.clamp(jumpChargeTime / MAX_JUMP_HOLD, 0.3f, 1f);
+
+        if (currentState == PlayerState.ON_WALL_LEFT) {
+            jumpToWallRight(factor);
+        } else if (currentState == PlayerState.ON_WALL_RIGHT) {
+            jumpToWallLeft(factor);
+        } else if (currentState == PlayerState.ON_GROUND) {
+            jumpToWallLeft(factor); // o hacia la derecha si prefieres
+        }
     }
 
     public void dispose() {
