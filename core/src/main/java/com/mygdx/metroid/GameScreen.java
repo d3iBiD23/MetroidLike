@@ -57,7 +57,7 @@ public class GameScreen extends ScreenAdapter {
         player = new Player(playerX, playerY);
 
         // Cargamos la textura para las paredes (plataformas que actúan de pared)
-        wallTexture = new Texture("PNG/Tiles/platformPack_tile040.png");
+        wallTexture = new Texture("PNG/Tiles/platformPack_tile033.png");
 
         // Generamos plataformas para las paredes (por ejemplo, 20 segmentos para cubrir una gran altura)
         leftWallPlatforms = new Array<Platform>();
@@ -110,32 +110,44 @@ public class GameScreen extends ScreenAdapter {
         if (Gdx.input.justTouched()) {
             player.onTap();
         }
-
         // Actualizar al jugador
         player.update(delta);
 
         // Comprobar colisión del jugador con las plataformas que hacen de pared
 
-        // Colisión con la pared izquierda
+        // Para la pared izquierda: si hay colisión, hacemos que el lado derecho del jugador
+        // quede pegado al lado derecho del tile
         for (Platform wall : leftWallPlatforms) {
             if (player.bounds.overlaps(wall.bounds)) {
-                player.position.x = wall.position.x; // Ajusta la posición para "pegarlo"
+                // tileWidth es wall.getTexture().getWidth()
+                float newX = wall.position.x + wall.getTexture().getWidth();
+                // Mueve el jugador para que su lado IZQUIERDO coincida con tileWidth
+                player.position.x = newX;
+                // Actualiza la hitbox
+                player.bounds.setPosition(player.position.x, player.position.y);
+                // Cambia el estado
                 player.currentState = Player.PlayerState.ON_WALL_LEFT;
                 break;
             }
         }
-        // Colisión con la pared derecha
+
+        // Para la pared derecha: si hay colisión, el lado izquierdo del jugador se coloca en el borde izquierdo del tile
         for (Platform wall : rightWallPlatforms) {
             if (player.bounds.overlaps(wall.bounds)) {
-                player.position.x = wall.position.x; // Ajusta la posición para "pegarlo"
+                float newX = wall.position.x - player.getTexture().getWidth();
+                // Mueve el jugador para que su lado DERECHO coincida con tile.x
+                player.position.x = newX;
+                // Actualiza la hitbox
+                player.bounds.setPosition(player.position.x, player.position.y);
+                // Cambia el estado
                 player.currentState = Player.PlayerState.ON_WALL_RIGHT;
                 break;
             }
         }
 
-        // Actualizar la cámara para seguir al jugador verticalmente
+
+        // Actualizar la cámara para que siga al jugador verticalmente
         float minCameraY = SCREEN_HEIGHT / 2;
-        // La cámara se mueve hacia arriba conforme el jugador sube
         float targetY = Math.max(player.position.y, minCameraY);
         camera.position.y = MathUtils.lerp(camera.position.y, targetY, 0.1f);
     }
