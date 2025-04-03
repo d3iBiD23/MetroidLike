@@ -22,7 +22,6 @@ public class Main extends Game {
         camera.update();
 
 
-        setScreen(new GameScreen(this));
     }
 
     @Override
