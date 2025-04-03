@@ -77,7 +77,7 @@ public class GameScreen extends ScreenAdapter {
     private void update(float delta) {
         player.update(delta);
 
-        // Manejo de controles táctiles (o de escritorio) para mover al personaje...
+        // Manejo de controles táctiles (o de escritorio) para mover al personaje
         if (Gdx.input.isTouched()) {
             float touchX = Gdx.input.getX();
             float screenWidth = Gdx.graphics.getWidth();
@@ -97,29 +97,31 @@ public class GameScreen extends ScreenAdapter {
             }
         }
 
-        // Seguimiento de cámara con zona muerta y límite inferior
-        float viewportHeight = 800;  // Altura de la cámara
-        float deadZone = 50;         // Margen de zona muerta (puedes ajustar este valor)
-        float cameraBottom = camera.position.y - viewportHeight / 2;
-        float cameraTop = camera.position.y + viewportHeight / 2;
+        // Seguimiento de cámara:
+        float viewportHeight = 800; // Altura del viewport
+        float minCameraY = viewportHeight / 2; // La cámara no baja más allá de la mitad inferior de la pantalla (por ejemplo, 400)
+
+        // Calculamos la diferencia entre la posición del jugador y la de la cámara
+        float relativeY = player.position.y - camera.position.y;
         float targetY = camera.position.y;
 
-        // Si el personaje se acerca al borde inferior, mueve la cámara hacia abajo
-        if (player.position.y < cameraBottom + deadZone) {
-            targetY = player.position.y - deadZone + viewportHeight / 2;
-        }
-        // Si el personaje se acerca al borde superior, mueve la cámara hacia arriba
-        else if (player.position.y > cameraTop - deadZone) {
-            targetY = player.position.y + deadZone - viewportHeight / 2;
+        // Si el jugador está un poco por encima (por ejemplo, más de +20) se mueve la cámara hacia arriba
+        float deadZoneUp = 20;
+        // Si el jugador cae mucho (por ejemplo, menos de -100) se mueve la cámara hacia abajo
+        float deadZoneDown = -100;
+
+        if (relativeY > deadZoneUp) {
+            // El jugador está por encima de la zona "segura", la cámara se mueve para dejarlo 20 píxeles por debajo del tope
+            targetY = player.position.y - deadZoneUp;
+        } else if (relativeY < deadZoneDown) {
+            // El jugador está muy abajo, la cámara se mueve para dejarlo 100 píxeles por encima del fondo
+            targetY = player.position.y - deadZoneDown;
         }
 
-        // Impide que la cámara muestre por debajo del suelo al inicio
-        float minCameraY = viewportHeight / 2;  // Por ejemplo, si la pantalla es de 800, mínimo es 400
-        if (targetY < minCameraY) {
-            targetY = minCameraY;
-        }
+        // La cámara no puede bajar más allá del suelo
+        targetY = Math.max(targetY, minCameraY);
 
-        // Interpola suavemente la posición de la cámara
+        // Movemos la cámara suavemente
         camera.position.y = MathUtils.lerp(camera.position.y, targetY, 0.1f);
 
     }
