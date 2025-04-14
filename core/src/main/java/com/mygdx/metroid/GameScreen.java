@@ -139,7 +139,6 @@ public class GameScreen extends ScreenAdapter {
         // Para la pared izquierda: queremos que el jugador se "pegue" en el borde derecho del tile
         for (Platform wall : leftWallPlatforms) {
             if (player.bounds.overlaps(wall.bounds)) {
-                // El lado izquierdo del jugador se coloca en:
                 float newX = wall.position.x + wall.getTexture().getWidth();
                 player.position.x = newX;
                 player.bounds.setPosition(player.position.x, player.position.y);
@@ -182,6 +181,5 @@ public class GameScreen extends ScreenAdapter {
             wallTexture.dispose();
             wallTexture = null;
         }
-        // También se podrían disponer las plataformas si fuera necesario
     }
 }

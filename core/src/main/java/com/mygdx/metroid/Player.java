@@ -54,36 +54,37 @@ public class Player {
     }
 
     public void update(float delta) {
-        // Aplica la física según el estado actual
+        // Aplicar física según el estado
         switch (currentState) {
             case IN_AIR:
-                // Durante el salto se aplica la gravedad habitual.
                 velocity.y += GRAVITY;
                 break;
             case ON_WALL_LEFT:
             case ON_WALL_RIGHT:
                 velocity.y = 0;
+                // Opcional: si el jugador está en la pared, desactivar el boost
+                isJumping = false;
                 break;
             case ON_GROUND:
+                isJumping = false;
                 break;
         }
 
-        // Aquí actualizamos la posición en función de la velocidad
+        // Actualiza la posición basándose en la velocidad
         position.add(velocity.x * delta, velocity.y * delta);
         bounds.setPosition(position.x, position.y);
 
-        // Si el salto se inició y el usuario mantiene presionado (por ejemplo, la pantalla sigue tocada)
+        // Aplicar el impulso continuo si se mantiene presionado y no se excede el límite
         if (isJumping) {
             if (Gdx.input.isTouched() && jumpHoldTime < MAX_JUMP_DURATION) {
                 jumpHoldTime += delta;
-                // Aplica un impulso extra continuo para “mantener” el salto.
                 velocity.y += CONTINUOUS_JUMP_BOOST * delta;
             } else {
-                isJumping = false; // Se termina el “efecto” de mantener el salto
+                isJumping = false;
             }
         }
 
-        // Otros detalles (como animaciones) se pueden seguir actualizando...
+        // Actualiza animaciones u otros timers si es necesario...
     }
 
     /**
@@ -91,12 +92,9 @@ public class Player {
      * Según el estado actual, decide a qué pared saltar.
      */
     public void onTap() {
-        // Se define un factor base (mínimo) para el salto inmediato.
-        float baseFactor = 0.3f;
-
+        float baseFactor = 0.3f; // Factor base para el impulso inicial
         switch (currentState) {
             case ON_GROUND:
-                // Por ejemplo, si estás en el suelo, saltar hacia la izquierda (puedes invertirlo según convenga)
                 jumpToWallLeft(baseFactor);
                 break;
             case ON_WALL_LEFT:
@@ -106,12 +104,9 @@ public class Player {
                 jumpToWallLeft(baseFactor);
                 break;
             case IN_AIR:
-                // Si ya estás en el aire, se puede considerar un air bounce, según lo que maneje tu lógica.
                 performAirBounce();
-                return; // Salir para no activar la “mantención” del salto.
+                return;
         }
-
-        // Inicia el estado de salto variable
         isJumping = true;
         jumpHoldTime = 0f;
     }
