@@ -127,15 +127,10 @@ public class GameScreen extends ScreenAdapter {
 
     private void update(float delta) {
         // Detectar toque en pantalla para ejecutar la acción de salto
-        if (Gdx.input.isTouched()) {
-            if (!player.isChargingJump) {
-                player.startJumpCharge();
-            }
-        } else {
-            if (player.isChargingJump) {
-                player.releaseJumpCharge();
-            }
+        if (Gdx.input.justTouched()) {
+            player.onTap();
         }
+
         // Actualizar al jugador
         player.update(delta);
 

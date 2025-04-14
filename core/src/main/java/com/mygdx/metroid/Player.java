@@ -1,5 +1,6 @@
 package com.mygdx.metroid;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -24,7 +25,11 @@ public class Player {
     private float climbTimer = 0;
     private static final float CLIMB_DURATION = 0.2f;
 
-    public boolean isChargingJump = false;
+    public boolean isJumping = false; // En lugar de isChargingJump.
+    private float jumpHoldTime = 0f;    // Tiempo que se mantiene presionado el salto.
+    private final float MAX_JUMP_DURATION = 0.5f; // Tiempo máximo (en segundos) en que se aplica la potencia extra.
+    private final float INITIAL_JUMP_VELOCITY = 1000f; // Impulso inicial del salto (ajustable según tus necesidades).
+    private final float CONTINUOUS_JUMP_BOOST = 50f;    // Impulso extra continuo por segundo mientras se mantenga el toque.
     private float jumpChargeTime = 0f;
     private final float MAX_JUMP_HOLD = 0.5f; // medio segundo para salto completo
 
@@ -49,38 +54,36 @@ public class Player {
     }
 
     public void update(float delta) {
-        // Aplicamos la física según el estado actual
+        // Aplica la física según el estado actual
         switch (currentState) {
             case IN_AIR:
-                // Durante el salto, se aplica la gravedad
+                // Durante el salto se aplica la gravedad habitual.
                 velocity.y += GRAVITY;
                 break;
             case ON_WALL_LEFT:
             case ON_WALL_RIGHT:
-                // Cuando el jugador está "pegado" a la pared, anulamos la caída
                 velocity.y = 0;
                 break;
             case ON_GROUND:
-                // En el suelo no se aplica gravedad (puedes ajustar según necesites)
                 break;
         }
 
-        // Actualizamos la posición con base en la velocidad
+        // Aquí actualizamos la posición en función de la velocidad
         position.add(velocity.x * delta, velocity.y * delta);
-        // Actualizamos la hitbox
         bounds.setPosition(position.x, position.y);
 
-        // Controlamos el temporizador de la animación de "rebote" (climb)
-        if (climbTimer > 0) {
-            climbTimer -= delta;
-            if (climbTimer <= 0) {
-                texture = idleTexture;
+        // Si el salto se inició y el usuario mantiene presionado (por ejemplo, la pantalla sigue tocada)
+        if (isJumping) {
+            if (Gdx.input.isTouched() && jumpHoldTime < MAX_JUMP_DURATION) {
+                jumpHoldTime += delta;
+                // Aplica un impulso extra continuo para “mantener” el salto.
+                velocity.y += CONTINUOUS_JUMP_BOOST * delta;
+            } else {
+                isJumping = false; // Se termina el “efecto” de mantener el salto
             }
         }
 
-        if (isChargingJump) {
-            jumpChargeTime += delta;
-        }
+        // Otros detalles (como animaciones) se pueden seguir actualizando...
     }
 
     /**
@@ -88,25 +91,29 @@ public class Player {
      * Según el estado actual, decide a qué pared saltar.
      */
     public void onTap() {
-        float factor = MathUtils.clamp(jumpChargeTime / MAX_JUMP_HOLD, 0.3f, 1f);
+        // Se define un factor base (mínimo) para el salto inmediato.
+        float baseFactor = 0.3f;
+
         switch (currentState) {
             case ON_GROUND:
-                // Primer salto: lanzamos hacia la izquierda
-                jumpToWallLeft(factor);
+                // Por ejemplo, si estás en el suelo, saltar hacia la izquierda (puedes invertirlo según convenga)
+                jumpToWallLeft(baseFactor);
                 break;
             case ON_WALL_LEFT:
-                // Saltar hacia la derecha
-                jumpToWallRight(factor);
+                jumpToWallRight(baseFactor);
                 break;
             case ON_WALL_RIGHT:
-                // Saltar hacia la izquierda
-                jumpToWallLeft(factor);
+                jumpToWallLeft(baseFactor);
                 break;
             case IN_AIR:
-                // Rebote en el aire → cambia de dirección y aplica impulso
+                // Si ya estás en el aire, se puede considerar un air bounce, según lo que maneje tu lógica.
                 performAirBounce();
-                break;
+                return; // Salir para no activar la “mantención” del salto.
         }
+
+        // Inicia el estado de salto variable
+        isJumping = true;
+        jumpHoldTime = 0f;
     }
 
     private void performAirBounce() {
@@ -152,30 +159,6 @@ public class Player {
 
     public Texture getTexture() {
         return texture;
-    }
-
-    public void startJumpCharge() {
-        if (currentState == PlayerState.ON_WALL_LEFT || currentState == PlayerState.ON_WALL_RIGHT || currentState == PlayerState.ON_GROUND) {
-            isChargingJump = true;
-            jumpChargeTime = 0f;
-        }
-    }
-
-    public void releaseJumpCharge() {
-        if (!isChargingJump) return;
-
-        isChargingJump = false;
-
-        // Determinar fuerza del salto en base al tiempo de carga
-        float factor = MathUtils.clamp(jumpChargeTime / MAX_JUMP_HOLD, 0.3f, 1f);
-
-        if (currentState == PlayerState.ON_WALL_LEFT) {
-            jumpToWallRight(factor);
-        } else if (currentState == PlayerState.ON_WALL_RIGHT) {
-            jumpToWallLeft(factor);
-        } else if (currentState == PlayerState.ON_GROUND) {
-            jumpToWallLeft(factor); // o hacia la derecha si prefieres
-        }
     }
 
     public void dispose() {
